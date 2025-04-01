@@ -1,5 +1,5 @@
 import {DATE_FORMAT, EVENT_POINTS_TYPE} from '../constants.js';
-import {createElement} from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {humanizeEventDate, createUpperCase} from '../utils.js';
 
 function createTypeTemplate(type) {
@@ -76,8 +76,8 @@ function createDestinationTemplate(destination) {
 
 }
 
-function createFormEditTemplate(points, offers, checkedOffers, destinations) {
-  const {type, dateFrom, dateTo, basePrice} = points;
+function createFormEditTemplate(point, offers, checkedOffers, destinations) {
+  const {type, dateFrom, dateTo, basePrice} = point;
   const {name} = destinations;
 
   return (
@@ -104,7 +104,7 @@ function createFormEditTemplate(points, offers, checkedOffers, destinations) {
           </label>
           <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value='${name}' list="destination-list-1">
           <datalist id="destination-list-1">
-            ${destinations}
+          ${destinations}
           </datalist>
         </div>
 
@@ -138,27 +138,40 @@ function createFormEditTemplate(points, offers, checkedOffers, destinations) {
   );
 }
 
-export default class FormEditView {
-  constructor({points, offers, checkedOffers, destinations}) {
-    this.points = points;
-    this.offers = offers;
-    this.checkedOffers = checkedOffers;
-    this.destinations = destinations;
+export default class FormEditView extends AbstractView {
+  #point = null;
+  #offers = null;
+  #checkedOffers = null;
+  #destinations = null;
+  #handleFormSubmit = null;
+  #handleEditClick = null;
+
+  constructor({point, offers, checkedOffers, destinations, onFormSubmit, onEditClick}) {
+    super();
+    this.#point = point;
+    this.#offers = offers;
+    this.#checkedOffers = checkedOffers;
+    this.#destinations = destinations;
+    this.#handleFormSubmit = onFormSubmit;
+    this.#handleEditClick = onEditClick;
+
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#editClickHandler);
+
+    this.element.addEventListener('submit', this.#formSubmitHandler);
   }
 
-  getTemplate() {
-    return createFormEditTemplate(this.points, this.offers, this.checkedOffers, this.destinations);
+  get template() {
+    return createFormEditTemplate(this.#point, this.#offers, this.#checkedOffers, this.#destinations);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
 
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }
