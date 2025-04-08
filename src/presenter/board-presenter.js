@@ -26,17 +26,16 @@ export default class BoardPresenter {
 
   init() {
     this.#eventPoints = [...this.#pointModel.points];
+    this.render();
+  }
+
+  render() {
     render(this.#sortComponent, this.#container);
     render(this.#eventListComponent, this.#container);
     this.#renderNewEventButton();
 
     for (let i = 1; i < this.#eventPoints.length; i++) {
-      this.#renderEventPoint(
-        this.#eventPoints[i],
-        this.#pointModel.getOffersByType(this.#eventPoints[i].type),
-        this.#pointModel.getOffersById(this.#eventPoints[i].type, this.#eventPoints[i].offers),
-        this.#pointModel.getDestinationById(this.#eventPoints[i].destination)
-      );
+      this.#renderEventPoint(this.#eventPoints[i]);
     }
   }
 
