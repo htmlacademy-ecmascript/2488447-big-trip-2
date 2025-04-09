@@ -1,4 +1,4 @@
-export const EVENT_POINTS_COUNT = 4;
+export const EVENT_POINTS_COUNT = 10;
 
 export const DATE_FORMAT = {
   monthDay: 'MMM D',

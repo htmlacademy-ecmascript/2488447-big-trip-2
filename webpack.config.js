@@ -37,6 +37,10 @@ const path = require('path');
           },
         },
       },
-    ]
-  }
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader']
+      },
+    ],
+  },
  };
