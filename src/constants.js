@@ -17,3 +17,17 @@ export const EVENT_POINTS_TYPE = [
   'sightseeing',
   'restaurant'
 ];
+
+export const FilterType = {
+  EVERYTHING: 'everything',
+  PAST: 'past',
+  PRESENT: 'present',
+  FUTURE: 'future'
+};
+
+export const NoEventsMessage = {
+  [FilterType.EVERYTHING]: 'Click New Event to create your first point',
+  [FilterType.PAST]: 'There are no past events now',
+  [FilterType.PRESENT]: 'There are no present events now',
+  [FilterType.FUTURE]: 'There are no future events now'
+};
