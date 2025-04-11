@@ -1,4 +1,7 @@
 import dayjs from 'dayjs';
+import { NoEventsMessage } from './constants.js';
+import { FilterType } from './constants.js';
+
 
 export function humanizeEventDate(date, format) {
   return (date) ? dayjs(date).format(format) : '';
@@ -31,4 +34,25 @@ export function getRandomArrayElement(items) {
 
 export function createUpperCase(word) {
   return (`${word[0].toUpperCase()}${word.slice(1)}`);
+}
+
+export function filterEventPoints(points) {
+  const now = dayjs();
+  const filteredPoints = {
+    EVERYTHING: points,
+    FUTURE: points.filter((point) => dayjs(point.dateFrom).isAfter(now)),
+    PRESENT: points.filter((point) => dayjs(point.dateFrom).isBefore(now) && dayjs(point.dateTo).isAfter(now)),
+    PAST: points.filter((point) => dayjs(point.dateTo).isBefore(now))
+  };
+
+  const result = Object.entries(filteredPoints).map(
+    ([filterType]) => {
+      const count = filteredPoints[filterType].length;
+      return {
+        type: FilterType[filterType],
+        count: count,
+        placeholder: count === 0 ? NoEventsMessage[FilterType[filterType]] : null
+      };
+    });
+  return result;
 }
