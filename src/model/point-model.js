@@ -1,10 +1,9 @@
-import { EVENT_POINTS_COUNT } from '../constants.js';
 import { destinations } from '../mocks/destinations.js';
 import { offers } from '../mocks/offers.js';
-import { getRandomPoint } from '../mocks/points.js';
+import { eventPoints } from '../mocks/points.js';
 
 export default class PointModel {
-  #points = Array.from({length: EVENT_POINTS_COUNT}, getRandomPoint);
+  #points = eventPoints;
   #offers = offers;
   #destinations = destinations;
 
@@ -21,18 +20,21 @@ export default class PointModel {
   }
 
   getOffersByType(type) {
-    return this.#offers.find((offer) => offer.type === type) || { type, offers: [] }; //ищет первое предложение в массиве, соответствующее нужному типу.
+    const allOffers = this.offers;
+    return allOffers.find((offer) => offer.type === type);
   }
 
-  getOffersById(type, offersId = []) {
+  getOffersById(type, offersId) {
     const offersType = this.getOffersByType(type);
-    if (!offersType || !offersType.offers || offersId.length === 0) {
-      return [];
-    }
-    return offersType.offers.filter((item) => offersId.includes(item.id)); //фильтрует предложения, оставляя только те, чьи идентификаторы совпадают с переданными
+    return offersType.offers.filter((item) => offersId.find((id) => item.id === id));
   }
 
   getDestinationById(id) {
-    return this.#destinations.find((destination) => destination.id === id) || null; //Принимает айди направления и ищет его в массиве направлений. Возвращает первое совпадение.
+    const allDestinations = this.destinations;
+    return allDestinations.find((destination) => destination.id === id);
+  }
+
+  updatePoint(points, update) {
+    return points.map((point) => point.id === update.id ? update : point);
   }
 }
