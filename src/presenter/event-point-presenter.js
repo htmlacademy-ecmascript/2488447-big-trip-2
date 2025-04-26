@@ -48,6 +48,7 @@ export default class EventPointPresenter {
       },
       onFavoriteClick: this.#handleFavoriteClick
     });
+
     this.#eventEditFormComponent = new FormEditView({
       point: point,
       offers: this.#pointModel.getOffersByType(point.type),
@@ -65,17 +66,20 @@ export default class EventPointPresenter {
       }
     });
 
+    this.#renderComponents(prevEventPointComponent, prevEventEditFormComponent);
+  }
 
+  #renderComponents(prevEventPointComponent, prevEventEditFormComponent) {
     if (prevEventPointComponent === null || prevEventEditFormComponent === null) {
       render(this.#eventPointComponent, this.#container);
       return;
     }
 
-    if (this.#mode === Mode.DEFAULT && prevEventPointComponent !== null && prevEventPointComponent.element) {
+    if (this.#mode === Mode.DEFAULT && prevEventPointComponent.element) {
       replace(this.#eventPointComponent, prevEventPointComponent);
     }
 
-    if (this.#mode === Mode.EDITING && prevEventEditFormComponent !== null && prevEventEditFormComponent.element) {
+    if (this.#mode === Mode.EDITING && prevEventEditFormComponent.element) {
       replace(this.#eventEditFormComponent, prevEventEditFormComponent);
     }
 
@@ -87,7 +91,6 @@ export default class EventPointPresenter {
     remove(this.#eventPointComponent);
     remove(this.#eventEditFormComponent);
   }
-
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {

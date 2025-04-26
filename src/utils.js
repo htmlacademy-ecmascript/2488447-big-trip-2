@@ -2,6 +2,9 @@ import dayjs from 'dayjs';
 import { NoEventsMessage } from './constants.js';
 import { FilterType } from './constants.js';
 
+function getEventDuration(event) {
+  return dayjs(event.dateTo).diff(dayjs(event.dateFrom));
+}
 
 export function humanizeEventDate(date, format) {
   return (date) ? dayjs(date).format(format) : '';
@@ -55,4 +58,19 @@ export function filterEventPoints(points) {
       };
     });
   return result;
+}
+
+export function sortByDate(eventA, eventB) {
+  return dayjs(eventA.dateFrom).diff(dayjs(eventB.dateFrom));
+}
+
+export function sortByTime(eventA, eventB) {
+  const eventADuration = getEventDuration(eventA);
+  const eventBDuration = getEventDuration(eventB);
+
+  return eventBDuration - eventADuration;
+}
+
+export function sortByPrice(eventB, eventA) {
+  return eventA.basePrice - eventB.basePrice;
 }

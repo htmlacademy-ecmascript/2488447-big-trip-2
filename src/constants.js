@@ -25,6 +25,12 @@ export const FilterType = {
   FUTURE: 'future'
 };
 
+export const SortType = {
+  DAY: 'day',
+  TIME: 'time',
+  PRICE: 'price',
+};
+
 export const NoEventsMessage = {
   [FilterType.EVERYTHING]: 'Click New Event to create your first point',
   [FilterType.PAST]: 'There are no past events now',

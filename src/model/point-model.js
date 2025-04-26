@@ -34,7 +34,8 @@ export default class PointModel {
     return allDestinations.find((destination) => destination.id === id);
   }
 
-  updatePoint(points, update) {
-    return points.map((point) => point.id === update.id ? update : point);
+  updatePoint(update) {
+    this.#points.map((point) => point.id === update.id ? update : point);
+    return this.#points;
   }
 }

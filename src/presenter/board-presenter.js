@@ -5,7 +5,9 @@ import TripInfoView from '../view/trip-info-view.js';
 import NoEventPointsView from '../view/no-event-points-view.js';
 import { render, RenderPosition } from '../framework/render.js';
 import { filterEventPoints } from '../utils.js';
+import { sortByDate, sortByTime, sortByPrice } from '../utils.js';
 import EventPointPresenter from './event-point-presenter.js';
+import { SortType } from '../constants.js';
 
 const siteHeaderElement = document.querySelector('.page-header');
 const tripMainElement = siteHeaderElement.querySelector('.trip-main');
@@ -16,8 +18,9 @@ export default class BoardPresenter {
   #container = null;
   #pointModel = null;
   #filterModel = null;
+  #sortComponent = null;
 
-  #sortComponent = new SortView();
+  #currentSortType = SortType.DAY;
   #tripInfoComponent = new TripInfoView();
   #eventListComponent = new EventListView();
   #eventPointsPresenters = new Map();
@@ -31,11 +34,9 @@ export default class BoardPresenter {
   init() {
     this.#eventPoints = [...this.#pointModel.points];
     this.#renderTripInfo();
-    this.#renderSort();
     this.#renderFilter();
-    this.#renderEventsList();
+    this.#renderSort();
     this.#renderBoard();
-    this.#renderNoEvents();
   }
 
   #renderEventPoint(point) {
@@ -55,8 +56,43 @@ export default class BoardPresenter {
     render(this.#tripInfoComponent, tripMainElement, RenderPosition.AFTERBEGIN);
   }
 
+  #handleSortTypeChange = (sortType) => {
+    if (this.#currentSortType === sortType) {
+      return;
+    }
+
+    this.#currentSortType = sortType;
+    this.#sortPoints(sortType);
+    this.#clearEventPointsList();
+    this.#renderBoard();
+    this.#sortComponent.element.remove();
+    this.#renderSort();
+  };
+
+  #sortPoints(sortType) {
+
+    switch(sortType) {
+      case SortType.DAY:
+        this.#eventPoints.sort(sortByDate);
+        break;
+      case SortType.PRICE:
+        this.#eventPoints.sort(sortByPrice);
+        break;
+      case SortType.TIME:
+        this.#eventPoints.sort(sortByTime);
+        break;
+    }
+
+    this.#currentSortType = sortType;
+  }
+
   #renderSort() {
-    render(this.#sortComponent, this.#container);
+    this.#sortComponent = new SortView({
+      currentSortType: this.#currentSortType,
+      onSortTypeChange: this.#handleSortTypeChange
+    });
+
+    render(this.#sortComponent, this.#container, RenderPosition.AFTERBEGIN);
   }
 
   #handleModeChange = () => {
@@ -82,15 +118,14 @@ export default class BoardPresenter {
     this.#eventPointsPresenters.clear();
   }
 
-  #renderNoEvents() {
-    if(this.#eventPoints.length === 0) {
-      render(new NoEventPointsView(this.#filterModel), this.#container);
-    }
-  }
-
   #renderBoard() {
-    for (let i = 0; i < this.#eventPoints.length; i++) {
-      this.#renderEventPoint(this.#eventPoints[i]);
+    if (this.#eventPoints.length === 0) {
+      render(new NoEventPointsView(this.#filterModel), this.#container);
+    } else {
+      this.#renderEventsList();
+      for (const point of this.#eventPoints) {
+        this.#renderEventPoint(point);
+      }
     }
   }
 }
