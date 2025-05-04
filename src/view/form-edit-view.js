@@ -1,6 +1,10 @@
 import {DATE_FORMAT, EVENT_POINTS_TYPE} from '../constants.js';
-import AbstractView from '../framework/view/abstract-view.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import {humanizeEventDate, createUpperCase} from '../utils.js';
+
+import flatpickr from 'flatpickr';
+
+import 'flatpickr/dist/flatpickr.min.css';
 
 function createTypeTemplate(type) {
   return (
@@ -45,7 +49,8 @@ function createOffersListTemplate({offers}, checkedOffers) {
 function createPhotoTemplate(photo) {
   const {src, description} = photo;
   return (
-    `<img class="event__photo" src=${src} alt=${description}>`);
+    `<img class="event__photo" src=${src} alt=${description}>`
+  );
 }
 
 function createPhotoContainerTemplate(pictures) {
@@ -58,6 +63,12 @@ function createPhotoContainerTemplate(pictures) {
       </div>`
     );
   }
+}
+
+function createDestinationListTemplate (destinations, selectedDestinationId) {
+  const selectedDestinationObject = destinations.find((destination) => destination.id === selectedDestinationId);
+
+  return (`${destinations.map((item) => `<option value="${item.name}" ${(selectedDestinationObject === item) ? 'selected' : ''}>${item.name}</option>`).join('')}`);
 }
 
 function createDestinationTemplate(destination) {
@@ -73,12 +84,11 @@ function createDestinationTemplate(destination) {
       </section>`
     );
   }
-
 }
 
-function createFormEditTemplate(point, offers, checkedOffers, destinations) {
-  const {type, dateFrom, dateTo, basePrice} = point;
-  const {name} = destinations;
+function createFormEditTemplate(points, offers, checkedOffers, destination, destinationsAll) {
+  const {type, dateFrom, dateTo, basePrice} = points;
+  const {name} = destination;
 
   return (
     `<li class="trip-events__item">
@@ -105,7 +115,7 @@ function createFormEditTemplate(point, offers, checkedOffers, destinations) {
           </label>
           <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value='${name}' list="destination-list-1">
           <datalist id="destination-list-1">
-          ${destinations}
+          ${createDestinationListTemplate(destinationsAll)}
           </datalist>
         </div>
 
@@ -133,47 +143,148 @@ function createFormEditTemplate(point, offers, checkedOffers, destinations) {
       </header>
       <section class="event__details">
         ${createOffersListTemplate(offers, checkedOffers)}
-        ${createDestinationTemplate(destinations)}
+        ${createDestinationTemplate(destination, destinationsAll)}
       </section>
     </form>
     </li>`
   );
 }
 
-export default class FormEditView extends AbstractView {
-  #point = null;
+export default class FormEditView extends AbstractStatefulView {
   #offers = null;
   #checkedOffers = null;
-  #destinations = null;
+  #destination = null;
+  #destinationsAll = null;
   #handleFormSubmit = null;
   #handleEditClick = null;
+  #pointModel = null;
+  #datepickerFrom = null;
+  #datepickerTo = null;
 
-  constructor({point, offers, checkedOffers, destinations, onFormSubmit, onEditClick}) {
+  constructor({point, offers, checkedOffers, destination, destinationsAll, onFormSubmit, onEditClick, pointModel}) {
     super();
-    this.#point = point;
     this.#offers = offers;
     this.#checkedOffers = checkedOffers;
-    this.#destinations = destinations;
+    this.#destination = destination;
+    this.#destinationsAll = destinationsAll;
     this.#handleFormSubmit = onFormSubmit;
     this.#handleEditClick = onEditClick;
+    this.#pointModel = pointModel;
 
-    this.element.querySelector('.event__rollup-btn')
-      .addEventListener('click', this.#editClickHandler);
-
-    this.element.addEventListener('submit', this.#formSubmitHandler);
+    this._setState(FormEditView.parsePointToState({point}));
+    this.#setDatepickers();
+    this._restoreHandlers();
   }
 
   get template() {
-    return createFormEditTemplate(this.#point, this.#offers, this.#checkedOffers, this.#destinations);
+    return createFormEditTemplate(
+      this._state,
+      this.#offers,
+      this.#checkedOffers,
+      this.#destination,
+      this.#destinationsAll,
+    );
   }
 
-  #formSubmitHandler = (evt) => {
-    evt.preventDefault();
-    this.#handleFormSubmit();
+  _restoreHandlers = () => {
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
+    this.element.querySelectorAll('.event__type-input').forEach((element) => element.addEventListener('change', this.#changeTypeHandler));
+    this.element.querySelector('.event__input--destination').addEventListener('change', this.#changeDestinationHandler);
+    this.element.addEventListener('submit', this.#formSubmitHandler);
   };
+
+  removeElement() {
+    super.removeElement();
+
+    if(this.#datepickerFrom) {
+      this.#datepickerFrom.destroy();
+      this.#datepickerFrom = null;
+    }
+
+    if(this.#datepickerTo) {
+      this.#datepickerTo.destroy();
+      this.#datepickerTo = null;
+    }
+  }
+
+  reset = (point) => this.updateElement(FormEditView.parsePointToState({point}));
 
   #editClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleEditClick();
   };
+
+  #changeTypeHandler = (evt) => {
+    evt.preventDefault();
+    const offers = this.#pointModel.getOffersByType(evt.target.value);
+    this.#offers = offers;
+    this.updateElement({
+      ...this._state,
+      type: `${evt.target.value}`,
+      offers,
+    });
+    this.#setDatepickers(); // нужен чтобы не пропадал календарь после других изменений
+  };
+
+  #changeDestinationHandler = (evt) => {
+    evt.preventDefault();
+    const selectedDestination = this.#destinationsAll.find((destination) => destination.name === `${evt.target.value}`);
+    const selectedDestinationId = selectedDestination ? selectedDestination.id : null;
+    const newDestination = this.#pointModel.getDestinationById(selectedDestinationId);
+    this.#destination = newDestination;
+    this.updateElement({
+      ...this._state,
+      destination: newDestination
+    });
+    this.#setDatepickers(); // нужен чтобы не пропадал календарь после других изменений
+  };
+
+  #dateFromChangeHandler = ([userDate]) => {
+    this._setState({ ...this._state.point, dateFrom: userDate});
+    this.#datepickerTo.set('minDate', this._state.dateFrom);
+  };
+
+  #dateToChangeHandler = ([userDate]) => {
+    this._setState({ ...this._state.point, dateTo: userDate});
+    this.#datepickerFrom.set('maxDate', this._state.dateTo);
+  };
+
+  #setDatepickers = () => {
+    const [ dateFromElement, dateToElement ] = this.element.querySelectorAll('.event__input--time');
+    const dateFormatConfig = {
+      dateFormat: 'd/m/y H:i',
+      enableTime: true,
+      Locale: {firstDay0fWeek: 1},
+      'time_24hr': true
+    };
+
+    this.#datepickerFrom = flatpickr(
+      dateFromElement,
+      {
+        ...dateFormatConfig,
+        defaultDate: this._state.dateFrom,
+        onClose: this.#dateFromChangeHandler,
+        maxDate: this._state.dateTo
+      }
+    );
+
+    this.#datepickerTo = flatpickr(
+      dateToElement,
+      {
+        ...dateFormatConfig,
+        defaultDate: this._state.dateTo,
+        onClose: this.#dateToChangeHandler,
+        minDate: this._state.dateFrom
+      }
+    );
+  };
+
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit(FormEditView.parseStateToPoint(this._state));
+  };
+
+  static parsePointToState = ({point}) => ({...point});
+
+  static parseStateToPoint = (state) => ({...state.point});
 }
