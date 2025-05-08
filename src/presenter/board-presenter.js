@@ -82,8 +82,6 @@ export default class BoardPresenter {
         this.#eventPoints.sort(sortByTime);
         break;
     }
-
-    this.#currentSortType = sortType;
   }
 
   #renderSort() {

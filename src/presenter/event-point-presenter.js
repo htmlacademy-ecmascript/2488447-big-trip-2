@@ -26,17 +26,17 @@ export default class EventPointPresenter {
 
   init(point) {
     this.#point = point;
+    const prevEventPointComponent = this.#eventPointComponent;
+    const prevEventEditFormComponent = this.#eventEditFormComponent;
 
     const escKeyDownHandler = (evt) => {
       if (evt.key === 'Escape') {
         evt.preventDefault();
+        this.#eventEditFormComponent.reset(this.#point);
         this.#replaceFormToPoint();
         document.removeEventListener('keydown', escKeyDownHandler);
       }
     };
-
-    const prevEventPointComponent = this.#eventPointComponent;
-    const prevEventEditFormComponent = this.#eventEditFormComponent;
 
     this.#eventPointComponent = new PointView({
       point: point,
@@ -53,33 +53,33 @@ export default class EventPointPresenter {
       point: point,
       offers: this.#pointModel.getOffersByType(point.type),
       checkedOffers: this.#pointModel.getOffersById(point.type, point.offers),
-      destinations: this.#pointModel.getDestinationById(point.destination),
+      destination: this.#pointModel.getDestinationById(point.destination),
       destinationsAll: this.#pointModel.destinations,
-      onFormSubmit: () => {
+      pointModel: this.#pointModel,
+      onFormSubmit: (updatedPoint) => {
+        this.#pointModel.updatePoint(updatedPoint);
         this.#replaceFormToPoint();
         document.removeEventListener('keydown', escKeyDownHandler);
       },
 
+
       onEditClick: () => {
+        this.#eventEditFormComponent.reset(this.#point);
         this.#replaceFormToPoint();
         document.removeEventListener('keydown', escKeyDownHandler);
       }
     });
 
-    this.#renderComponents(prevEventPointComponent, prevEventEditFormComponent);
-  }
-
-  #renderComponents(prevEventPointComponent, prevEventEditFormComponent) {
     if (prevEventPointComponent === null || prevEventEditFormComponent === null) {
       render(this.#eventPointComponent, this.#container);
       return;
     }
 
-    if (this.#mode === Mode.DEFAULT && prevEventPointComponent.element) {
+    if (this.#mode === Mode.DEFAULT && prevEventPointComponent !== null && prevEventPointComponent.element) {
       replace(this.#eventPointComponent, prevEventPointComponent);
     }
 
-    if (this.#mode === Mode.EDITING && prevEventEditFormComponent.element) {
+    if (this.#mode === Mode.EDITING && prevEventEditFormComponent !== null && prevEventEditFormComponent.element) {
       replace(this.#eventEditFormComponent, prevEventEditFormComponent);
     }
 
@@ -88,9 +88,13 @@ export default class EventPointPresenter {
   }
 
   destroy() {
+    if (this.#eventEditFormComponent) {
+      this.#eventEditFormComponent.reset(this.#point);
+    }
     remove(this.#eventPointComponent);
     remove(this.#eventEditFormComponent);
   }
+
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
