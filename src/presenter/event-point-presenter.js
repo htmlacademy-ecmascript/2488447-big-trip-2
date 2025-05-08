@@ -64,6 +64,7 @@ export default class EventPointPresenter {
 
 
       onEditClick: () => {
+        this.#eventEditFormComponent.reset(this.#point);
         this.#replaceFormToPoint();
         document.removeEventListener('keydown', escKeyDownHandler);
       }
@@ -87,6 +88,9 @@ export default class EventPointPresenter {
   }
 
   destroy() {
+    if (this.#eventEditFormComponent) {
+      this.#eventEditFormComponent.reset(this.#point);
+    }
     remove(this.#eventPointComponent);
     remove(this.#eventEditFormComponent);
   }
