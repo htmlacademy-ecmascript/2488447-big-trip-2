@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import { NoEventsMessage } from './constants.js';
 import { FilterType } from './constants.js';
 
-function getEventDuration(event) {
+export function getEventDuration(event) {
   return dayjs(event.dateTo).diff(dayjs(event.dateFrom));
 }
 
@@ -31,15 +31,11 @@ export function getTimeGap(dateFrom, dateTo) {
   return `${durationInDays}D ${hours}H ${minutes}M`;
 }
 
-export function getRandomArrayElement(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
 export function createUpperCase(word) {
   return (`${word[0].toUpperCase()}${word.slice(1)}`);
 }
 
-export function filterEventPoints(points) {
+export function filterEventPoints (points) {
   const now = dayjs();
   const filteredPoints = {
     EVERYTHING: points,
@@ -49,12 +45,13 @@ export function filterEventPoints(points) {
   };
 
   const result = Object.entries(filteredPoints).map(
-    ([filterType]) => {
-      const count = filteredPoints[filterType].length;
+    ([type]) => {
+      const count = filteredPoints[type].length;
       return {
-        type: FilterType[filterType],
+        type: FilterType[type],
         count: count,
-        placeholder: count === 0 ? NoEventsMessage[FilterType[filterType]] : null
+        placeholder: count === 0 ? NoEventsMessage[FilterType[type]] : null,
+        points: filteredPoints[type],
       };
     });
   return result;
@@ -73,4 +70,8 @@ export function sortByTime(eventA, eventB) {
 
 export function sortByPrice(eventB, eventA) {
   return eventA.basePrice - eventB.basePrice;
+}
+
+export function isDateEqual(dateA, dateB) {
+  return (dateA === null && dateB === null) || dayjs(dateA).isSame(dateB, 'D');
 }

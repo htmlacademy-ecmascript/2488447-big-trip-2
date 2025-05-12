@@ -11,7 +11,7 @@ function createSortTemplate(currentSortType) {
 
        <div class="trip-sort__item  trip-sort__item--event">
          <input id="sort-event" class="trip-sort__input  visually-hidden" type="radio" name="trip-sort" value="sort-event" disabled>
-         <label class="trip-sort__btn" for="sort-event">Event</label>
+         <label class="trip-sort__btn" disabled>Event</label>
        </div>
 
        <div class="trip-sort__item  trip-sort__item--time">
@@ -26,7 +26,7 @@ function createSortTemplate(currentSortType) {
 
        <div class="trip-sort__item  trip-sort__item--offer">
          <input id="sort-offer" class="trip-sort__input  visually-hidden" type="radio" name="trip-sort" value="sort-offer" disabled>
-         <label class="trip-sort__btn" for="sort-offer">Offers</label>
+         <label class="trip-sort__btn" disabled>Offers</label>
        </div>
     </form>`
   );
@@ -41,19 +41,19 @@ export default class SortView extends AbstractView {
     this.#currentSortType = currentSortType;
     this.#handleSortTypeChange = onSortTypeChange;
 
-    this.element.addEventListener('click', this.#onSortTypeChangeHandler);
+    this.element.addEventListener('click', this.#sortTypeChangeHandler);
   }
 
   get template() {
     return createSortTemplate(this.#currentSortType);
   }
 
-  #onSortTypeChangeHandler = (evt) => {
-    evt.preventDefault();
-    if (evt.target.tagName !== 'LABEL') {
+  #sortTypeChangeHandler = (evt) => {
+    if (evt.target.tagName !== 'LABEL' || evt.target.hasAttribute('disabled')) {
       return;
     }
 
+    evt.preventDefault();
     this.#handleSortTypeChange(evt.target.dataset.sortType);
   };
 

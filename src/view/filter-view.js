@@ -35,31 +35,24 @@ function createFiltersTemplate(filters, currentFilterType) {
 
 export default class FilterView extends AbstractView {
   #filters = null;
-  #filterModel = null;
   #currentFilterType = null;
+  #handleFilterTypeChange = null;
 
-  constructor(filters, filterModel) {
+  constructor({filters, currentFilterType, onFilterTypeChange}) {
     super();
     this.#filters = filters;
-    this.#filterModel = filterModel;
-    this.#currentFilterType = filterModel.getCurrentFilter();
-    this.#setInnerHandlers();
+    this.#currentFilterType = currentFilterType;
+    this.#handleFilterTypeChange = onFilterTypeChange;
+
+    this.element.addEventListener('change', this.#filterTypeChangeHandler);
   }
 
   get template() {
     return createFiltersTemplate(this.#filters, this.#currentFilterType);
   }
 
-  #setInnerHandlers() {
-    this.element.querySelectorAll('.trip-filters__filter-input')
-      .forEach((filterInput) => {
-        filterInput.addEventListener('click', this.#filterClickHandler);
-      });
-  }
-
-  #filterClickHandler = (evt) => {
+  #filterTypeChangeHandler = (evt) => {
     evt.preventDefault();
-    this.#filterModel.setCurrentFilter(evt.target.value);
-
+    this.#handleFilterTypeChange(evt.target.value);
   };
 }

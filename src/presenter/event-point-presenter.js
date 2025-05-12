@@ -1,19 +1,20 @@
+import { nanoid } from 'nanoid';
+import { Mode, UserAction, UpdateType, BLANK_POINT } from '../constants.js';
+import NewPointView from '../view/new-point-view.js';
 import PointView from '../view/point-view.js';
 import FormEditView from '../view/form-edit-view.js';
-import { remove, render, replace } from '../framework/render.js';
+import { remove, render, RenderPosition, replace } from '../framework/render.js';
 
-const Mode = {
-  DEFAULT: 'DEFAULT',
-  EDITING: 'EDITING'
-};
 
 export default class EventPointPresenter {
   #container = null;
   #pointModel = null;
   #eventPointComponent = null;
   #eventEditFormComponent = null;
+  #eventCreateFormComponent = null;
   #handleDataChange = null;
   #handleModeChange = null;
+  #escKeyDownHandler = null;
   #point = null;
   #mode = Mode.DEFAULT;
 
@@ -29,12 +30,17 @@ export default class EventPointPresenter {
     const prevEventPointComponent = this.#eventPointComponent;
     const prevEventEditFormComponent = this.#eventEditFormComponent;
 
-    const escKeyDownHandler = (evt) => {
+    this.#escKeyDownHandler = (evt) => {
       if (evt.key === 'Escape') {
         evt.preventDefault();
-        this.#eventEditFormComponent.reset(this.#point);
-        this.#replaceFormToPoint();
-        document.removeEventListener('keydown', escKeyDownHandler);
+        if (this.#eventCreateFormComponent) {
+          remove(this.#eventCreateFormComponent);
+          this.#eventCreateFormComponent = null;
+        } else {
+          this.#eventEditFormComponent.reset(this.#point);
+          this.#replaceFormToPoint();
+        }
+        document.removeEventListener('keydown', this.#escKeyDownHandler);
       }
     };
 
@@ -44,7 +50,7 @@ export default class EventPointPresenter {
       destinations: this.#pointModel.getDestinationById(point.destination),
       onEditClick: () => {
         this.#replacePointToForm();
-        document.addEventListener('keydown', escKeyDownHandler);
+        document.addEventListener('keydown', this.#escKeyDownHandler);
       },
       onFavoriteClick: this.#handleFavoriteClick
     });
@@ -56,17 +62,13 @@ export default class EventPointPresenter {
       destination: this.#pointModel.getDestinationById(point.destination),
       destinationsAll: this.#pointModel.destinations,
       pointModel: this.#pointModel,
-      onFormSubmit: (updatedPoint) => {
-        this.#pointModel.updatePoint(updatedPoint);
-        this.#replaceFormToPoint();
-        document.removeEventListener('keydown', escKeyDownHandler);
-      },
-
+      onFormSubmit: this.#handleFormSubmit,
+      onDeleteClick: this.#handleDeleteForm,
 
       onEditClick: () => {
-        this.#eventEditFormComponent.reset(this.#point);
+        this.#eventEditFormComponent.reset(this.#point); //
         this.#replaceFormToPoint();
-        document.removeEventListener('keydown', escKeyDownHandler);
+        document.removeEventListener('keydown', this.#escKeyDownHandler);
       }
     });
 
@@ -87,20 +89,59 @@ export default class EventPointPresenter {
     remove(prevEventEditFormComponent);
   }
 
-  destroy() {
-    if (this.#eventEditFormComponent) {
-      this.#eventEditFormComponent.reset(this.#point);
-    }
-    remove(this.#eventPointComponent);
-    remove(this.#eventEditFormComponent);
+  createPoint() {
+    this.#mode = Mode.EDITING;
+    this.#createPoint();
   }
 
+  destroy() {
+    // if (this.#eventEditFormComponent) {
+    //   this.#eventEditFormComponent.reset(this.#point);
+    // }//
+    remove(this.#eventPointComponent);
+    remove(this.#eventEditFormComponent);
+    if (this.#eventCreateFormComponent !== null) {
+      remove(this.#eventCreateFormComponent);
+    }
+  }
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
       this.#replaceFormToPoint();
     }
   }
+
+  #createPoint = () => {
+    if (this.#eventEditFormComponent !== null) {
+      return;
+    }
+    const point = BLANK_POINT;
+    this.#point = point;
+
+    this.#escKeyDownHandler = (evt) => {
+      if (evt.key === 'Escape') {
+        evt.preventDefault();
+        this.#handleCancelCreate();
+      }
+    };
+
+    this.#eventCreateFormComponent = new NewPointView({
+      point,
+      offers: this.#pointModel.getOffersByType(point.type),
+      destination: this.#pointModel.getDestinationById(point.destination),
+      destinationsAll: this.#pointModel.destinations,
+      pointModel: this.#pointModel,
+      onFormSubmit: this.#handleFormSubmit,
+      onDeleteClick: this.#handleDeleteForm,
+      onFormCancel: this.#handleCancelCreate
+    });
+
+    document.addEventListener('keydown', this.#escKeyDownHandler);
+
+    render(this.#eventCreateFormComponent, this.#container, RenderPosition.AFTERBEGIN);
+    this.#mode = Mode.NEW;
+    return point;
+  };
 
   #replacePointToForm = () => {
     replace(this.#eventEditFormComponent, this.#eventPointComponent);
@@ -109,12 +150,62 @@ export default class EventPointPresenter {
   };
 
   #replaceFormToPoint = () => {
-    replace(this.#eventPointComponent, this.#eventEditFormComponent);
+    if (this.#eventCreateFormComponent) {
+      remove(this.#eventCreateFormComponent);
+      this.#eventCreateFormComponent = null;
+    } else {
+      replace(this.#eventPointComponent, this.#eventEditFormComponent);
+    }
     this.#mode = Mode.DEFAULT;
   };
 
   #handleFavoriteClick = () => {
     const updatedPoint = {...this.#point, isFavorite: !this.#point.isFavorite};
-    this.#handleDataChange(updatedPoint);
+    this.#handleDataChange(
+      UserAction.UPDATE_POINT,
+      UpdateType.PATCH,
+      updatedPoint
+    );
+  };
+
+  #handleFormSubmit = (update) => {
+    if (this.#mode === Mode.NEW) {
+      this.#handleDataChange(
+        UserAction.ADD_POINT,
+        UpdateType.MINOR,
+        {id: nanoid(), ...update},
+      );
+      this.#mode = Mode.DEFAULT;
+      remove(this.#eventCreateFormComponent);
+      this.#eventCreateFormComponent = null;
+    } else {
+      this.#handleDataChange(
+        UserAction.UPDATE_POINT,
+        UpdateType.MINOR,
+        update,
+      );
+      this.#replaceFormToPoint();
+    }
+  };
+
+  #handleDeleteForm = (point) => {
+    if (this.#mode === Mode.NEW) {
+      this.#handleCancelCreate();
+    } else {
+      this.#handleDataChange(
+        UserAction.DELETE_POINT,
+        UpdateType.MINOR,
+        point,
+      );
+    }
+  };
+
+  #handleCancelCreate = () => {
+    if (this.#eventCreateFormComponent !== null) {
+      remove(this.#eventCreateFormComponent);
+      this.#eventCreateFormComponent = null;
+      document.removeEventListener('keydown', this.#escKeyDownHandler);
+    }
+    this.#mode = Mode.DEFAULT;
   };
 }
