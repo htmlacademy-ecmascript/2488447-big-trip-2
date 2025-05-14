@@ -1,5 +1,5 @@
-import AbstractView from '../framework/view/abstract-view.js';
 import { NoEventsMessage } from '../constants.js';
+import AbstractView from '../framework/view/abstract-view.js';
 
 function createNoEventPointsTemplate(currentFilter) {
   const noEventsTextValue = NoEventsMessage[currentFilter];

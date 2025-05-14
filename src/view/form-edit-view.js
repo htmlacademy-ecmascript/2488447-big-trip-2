@@ -1,10 +1,9 @@
 import he from 'he';
-import {DATE_FORMAT, EVENT_POINTS_TYPE} from '../constants.js';
-import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {humanizeEventDate, createUpperCase} from '../utils.js';
-
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
+import { DATE_FORMAT, EVENT_POINTS_TYPE } from '../constants.js';
+import { humanizeEventDate, createUpperCase } from '../utils.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 
 function createTypeTemplate(type) {
   return (
@@ -15,12 +14,17 @@ function createTypeTemplate(type) {
   );
 }
 
-function createOfferTemplate(offers, checkedOffers) {
-  const {id, title, price} = offers;
+function createOfferTemplate(offer, checkedOffers, isDisabled) {
+  const {id, title, price} = offer;
   const isChecked = checkedOffers.map((item) => item.id).includes(id) ? 'checked' : '';
   return (
     `<div class="event__offer-selector">
-      <input class="event__offer-checkbox  visually-hidden" id=${id} type="checkbox" name=${id} ${isChecked}>
+      <input class="event__offer-checkbox  visually-hidden"
+             id=${id}
+             type="checkbox"
+             name=${id}
+             ${isChecked}
+             ${isDisabled ? 'disabled' : ''}>
       <label class="event__offer-label" for=${id}>
         <span class="event__offer-title">${title}</span>
         &plus;&euro;&nbsp;
@@ -30,14 +34,13 @@ function createOfferTemplate(offers, checkedOffers) {
   );
 }
 
-function createOffersListTemplate({offers}, checkedOffers) {
+function createOffersListTemplate({offers}, checkedOffers, isDisabled) {
   if (offers.length !== 0) {
     return (
       `<section class="event__section  event__section--offers">
         <h3 class="event__section-title  event__section-title--offers">Offers</h3>
-
         <div class="event__available-offers">
-          ${offers.map((offer) => createOfferTemplate(offer, checkedOffers)).join('')}
+          ${offers.map((offer) => createOfferTemplate(offer, checkedOffers, isDisabled)).join('')}
         </div>
       </section>`
     );
@@ -74,22 +77,26 @@ function createDestinationListTemplate (destinations, selectedDestinationId) {
 }
 
 function createDestinationTemplate(destination) {
-  const {description, pictures} = destination;
-
-  if (description > 0 || (pictures && pictures.length > 0)) {
-    return (
-      `<section class="event__section  event__section--destination">
-          <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-          <p class="event__destination-description">${he.encode(description)}</p>
-
-          ${createPhotoContainerTemplate(pictures)}
-      </section>`
-    );
+  if (!destination) {
+    return '';
   }
+  const {description = '', pictures = []} = destination;
+
+  if (!description && (!pictures || pictures.length === 0)) {
+    return '';
+  }
+
+  return (
+    `<section class="event__section  event__section--destination">
+      <h3 class="event__section-title  event__section-title--destination">Destination</h3>
+      ${description ? `<p class="event__destination-description">${he.encode(description)}</p>` : ''}
+      ${pictures?.length > 0 ? createPhotoContainerTemplate(pictures) : ''}
+    </section>`
+  );
 }
 
 function createFormEditTemplate(points, offers, checkedOffers, destination, destinationsAll) {
-  const {type, dateFrom, dateTo, basePrice} = points;
+  const {type, dateFrom, dateTo, basePrice, isDisabled, isSaving, isDeleting} = points;
   const {name} = destination;
 
   return (
@@ -115,7 +122,7 @@ function createFormEditTemplate(points, offers, checkedOffers, destination, dest
           <label class="event__label  event__type-output" for="event-destination-1">
             ${createUpperCase(type)}
           </label>
-          <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value='${name}' list="destination-list-1">
+          <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value='${name}' list="destination-list-1" required ${isDisabled ? 'disabled' : ''}>
           <datalist id="destination-list-1">
           ${createDestinationListTemplate(destinationsAll)}
           </datalist>
@@ -123,10 +130,10 @@ function createFormEditTemplate(points, offers, checkedOffers, destination, dest
 
         <div class="event__field-group  event__field-group--time">
           <label class="visually-hidden" for="event-start-time-1">From</label>
-          <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${humanizeEventDate(dateFrom, DATE_FORMAT.fullDate)}">
+          <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${humanizeEventDate(dateFrom, DATE_FORMAT.fullDate)}" ${isDisabled ? 'disabled' : ''}>
           &mdash;
           <label class="visually-hidden" for="event-end-time-1">To</label>
-          <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${humanizeEventDate(dateTo, DATE_FORMAT.fullDate)}">
+          <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${humanizeEventDate(dateTo, DATE_FORMAT.fullDate)}" ${isDisabled ? 'disabled' : ''}>
         </div>
 
         <div class="event__field-group  event__field-group--price">
@@ -134,17 +141,21 @@ function createFormEditTemplate(points, offers, checkedOffers, destination, dest
             <span class="visually-hidden">Price</span>
             &euro;
           </label>
-          <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value=${basePrice}>
+          <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value=${basePrice} ${isDisabled ? 'disabled' : ''}>
         </div>
 
-        <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-        <button class="event__reset-btn" type="reset">Delete</button>
-        <button class="event__rollup-btn" type="button">
+        <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>
+          ${isSaving ? 'Saving...' : 'Save'}
+        </button>
+        <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>
+          ${isDeleting ? 'Deleting...' : 'Delete'}
+        </button>
+        <button class="event__rollup-btn" type="button" ${isDisabled ? 'disabled' : ''}>
           <span class="visually-hidden">Open event</span>
         </button>
       </header>
       <section class="event__details">
-        ${createOffersListTemplate(offers, checkedOffers)}
+        ${createOffersListTemplate(offers, checkedOffers, isDisabled)}
         ${createDestinationTemplate(destination, destinationsAll)}
       </section>
     </form>
@@ -237,7 +248,7 @@ export default class FormEditView extends AbstractStatefulView {
       type: `${evt.target.value}`,
       offers: [],
     });
-    this.#setDatepickers(); // нужен чтобы не пропадал календарь после других изменений
+    this.#setDatepickers();
   };
 
   #changeDestinationHandler = (evt) => {
@@ -255,9 +266,9 @@ export default class FormEditView extends AbstractStatefulView {
 
     this.updateElement({
       ...this._state,
-      destination: selectedDestinationId
+      destination: selectedDestinationId,
     });
-    this.#setDatepickers(); // нужен чтобы не пропадал календарь после других изменений
+    this.#setDatepickers();
   };
 
   #dateFromChangeHandler = ([userDate]) => {
@@ -338,8 +349,18 @@ export default class FormEditView extends AbstractStatefulView {
 
   static parsePointToState = ({point}) => ({
     ...point,
-    offers: point.offers || []
+    offers: point.offers || [],
+    isDisabled: false,
+    isSaving: false,
+    isDeleting: false,
   });
 
-  static parseStateToPoint = (state) => ({...state});
+  static parseStateToPoint = (state) => {
+    const point = {...state};
+    delete point.isDisabled;
+    delete point.isSaving;
+    delete point.isDeleting;
+
+    return point;
+  };
 }

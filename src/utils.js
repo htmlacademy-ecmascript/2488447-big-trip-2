@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
-import { NoEventsMessage } from './constants.js';
-import { FilterType } from './constants.js';
+import { NoEventsMessage, FilterType } from './constants.js';
 
 export function getEventDuration(event) {
   return dayjs(event.dateTo).diff(dayjs(event.dateFrom));
@@ -14,21 +13,21 @@ export function getTimeGap(dateFrom, dateTo) {
   const durationInMinutes = dayjs(dateTo).diff(dateFrom, 'minute');
 
   if (durationInMinutes < 60) {
-    return `${durationInMinutes}M`;
+    return `${String(durationInMinutes).padStart(2, '0')}m`;
   }
 
   const durationInHours = dayjs(dateTo).diff(dateFrom, 'hour');
 
   if (durationInHours < 24) {
     const durationMinutes = durationInMinutes % 60;
-    return `${durationInHours}H ${durationMinutes}M`;
+    return `${String(durationInHours).padStart(2, '0')}h ${String(durationMinutes).padStart(2, '0')}m`;
   }
 
   const durationInDays = dayjs(dateTo).diff(dateFrom, 'day');
   const hours = durationInHours % 24;
   const minutes = durationInMinutes % 60;
 
-  return `${durationInDays}D ${hours}H ${minutes}M`;
+  return `${String(durationInDays).padStart(2, '0')}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
 }
 
 export function createUpperCase(word) {
@@ -70,8 +69,4 @@ export function sortByTime(eventA, eventB) {
 
 export function sortByPrice(eventB, eventA) {
   return eventA.basePrice - eventB.basePrice;
-}
-
-export function isDateEqual(dateA, dateB) {
-  return (dateA === null && dateB === null) || dayjs(dateA).isSame(dateB, 'D');
 }

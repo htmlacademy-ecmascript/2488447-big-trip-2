@@ -1,18 +1,25 @@
-import { nanoid } from 'nanoid';
+import dayjs from 'dayjs';
 
-export const EVENT_POINTS_COUNT = 10;
+export const AUTHORIZATION = 'Basic ghtr2u650yt623j455sfr';
+export const END_POINT = 'https://22.objects.htmlacademy.pro/big-trip';
+
+export const TimeLimit = {
+  LOWER_LIMIT: 350,
+  UPPER_LIMIT: 1000,
+};
 
 export const DATE_FORMAT = {
+  dayMonth: 'DD MMM',
   monthDay: 'MMM D',
   fullDate: 'DD/MM/YY HH:mm',
-  hours: 'hh:mm'
+  hours: 'HH:mm'
 };
 
 export const EVENT_POINTS_TYPE = [
   'taxi',
   'bus',
-  'train',
   'ship',
+  'train',
   'drive',
   'flight',
   'check-in',
@@ -50,6 +57,8 @@ export const UpdateType = {
   PATCH: 'PATCH',
   MINOR: 'MINOR',
   MAJOR: 'MAJOR',
+  INIT: 'INIT',
+  ERROR: 'ERROR'
 };
 
 export const Mode = {
@@ -61,10 +70,29 @@ export const Mode = {
 export const BLANK_POINT = {
   basePrice: 0,
   dateFrom: new Date(),
-  dateTo: new Date(),
-  destination: '1',
+  dateTo: dayjs(new Date()).add(1, 'hour').toDate(),
+  destination: null,
   isFavorite: false,
   offers: [],
-  type: 'taxi',
-  id: nanoid(),
+  type: 'flight'
+};
+
+export const Method = {
+  GET: 'GET',
+  PUT: 'PUT',
+  POST: 'POST',
+  DELETE: 'DELETE',
+};
+
+export const EndPoint = {
+  POINTS: 'points',
+  OFFERS: 'offers',
+  DESTINATIONS: 'destinations',
+};
+
+export const RenderPosition = {
+  BEFOREBEGIN: 'beforebegin',
+  AFTERBEGIN: 'afterbegin',
+  BEFOREEND: 'beforeend',
+  AFTEREND: 'afterend',
 };
