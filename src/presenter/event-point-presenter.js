@@ -1,4 +1,3 @@
-import { nanoid } from 'nanoid';
 import { Mode, UserAction, UpdateType, BLANK_POINT } from '../constants.js';
 import NewPointView from '../view/new-point-view.js';
 import PointView from '../view/point-view.js';
@@ -12,17 +11,19 @@ export default class EventPointPresenter {
   #eventPointComponent = null;
   #eventEditFormComponent = null;
   #eventCreateFormComponent = null;
+  #onToggleButton = null;
   #handleDataChange = null;
   #handleModeChange = null;
   #escKeyDownHandler = null;
   #point = null;
   #mode = Mode.DEFAULT;
 
-  constructor({container, pointModel, onDataChange, onModeChange}) {
+  constructor({container, pointModel, onDataChange, onModeChange, onToggleButton}) {
     this.#container = container;
     this.#pointModel = pointModel;
     this.#handleDataChange = onDataChange;
     this.#handleModeChange = onModeChange;
+    this.#onToggleButton = onToggleButton;
   }
 
   init(point) {
@@ -66,7 +67,7 @@ export default class EventPointPresenter {
       onDeleteClick: this.#handleDeleteForm,
 
       onEditClick: () => {
-        this.#eventEditFormComponent.reset(this.#point); //
+        this.#eventEditFormComponent.reset(this.#point);
         this.#replaceFormToPoint();
         document.removeEventListener('keydown', this.#escKeyDownHandler);
       }
@@ -82,7 +83,8 @@ export default class EventPointPresenter {
     }
 
     if (this.#mode === Mode.EDITING && prevEventEditFormComponent !== null && prevEventEditFormComponent.element) {
-      replace(this.#eventEditFormComponent, prevEventEditFormComponent);
+      replace(this.#eventPointComponent, prevEventEditFormComponent);
+      this.#mode = Mode.DEFAULT;
     }
 
     remove(prevEventPointComponent);
@@ -95,9 +97,6 @@ export default class EventPointPresenter {
   }
 
   destroy() {
-    // if (this.#eventEditFormComponent) {
-    //   this.#eventEditFormComponent.reset(this.#point);
-    // }//
     remove(this.#eventPointComponent);
     remove(this.#eventEditFormComponent);
     if (this.#eventCreateFormComponent !== null) {
@@ -108,6 +107,49 @@ export default class EventPointPresenter {
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
       this.#replaceFormToPoint();
+    }
+  }
+
+  setSaving() {
+    if (this.#mode === Mode.EDITING) {
+      this.#eventEditFormComponent.updateElement({
+        isSaving: true,
+        isDisabled: false,
+      });
+    }
+  }
+
+  setDeleting() {
+    if (this.#mode === Mode.EDITING) {
+      this.#eventEditFormComponent.updateElement({
+        isDeleting: true,
+        isDisabled: false,
+      });
+    }
+  }
+
+  setAborting() {
+    const resetFormState = () => {
+      this.#eventEditFormComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
+    };
+
+    if (this.#mode === Mode.DEFAULT) {
+      if (this.#eventPointComponent) {
+        this.#eventPointComponent.shake();
+      }
+      return;
+    }
+
+    if (this.#mode === Mode.EDITING) {
+      this.#eventEditFormComponent.shake(resetFormState);
+    }
+
+    if (this.#mode === Mode.NEW && this.#eventCreateFormComponent) {
+      this.#eventCreateFormComponent.shake();
     }
   }
 
@@ -154,6 +196,7 @@ export default class EventPointPresenter {
       remove(this.#eventCreateFormComponent);
       this.#eventCreateFormComponent = null;
     } else {
+      this.#eventEditFormComponent.reset(this.#point);
       replace(this.#eventPointComponent, this.#eventEditFormComponent);
     }
     this.#mode = Mode.DEFAULT;
@@ -173,18 +216,14 @@ export default class EventPointPresenter {
       this.#handleDataChange(
         UserAction.ADD_POINT,
         UpdateType.MINOR,
-        {id: nanoid(), ...update},
+        update,
       );
-      this.#mode = Mode.DEFAULT;
-      remove(this.#eventCreateFormComponent);
-      this.#eventCreateFormComponent = null;
     } else {
       this.#handleDataChange(
         UserAction.UPDATE_POINT,
         UpdateType.MINOR,
         update,
       );
-      this.#replaceFormToPoint();
     }
   };
 
@@ -207,5 +246,6 @@ export default class EventPointPresenter {
       document.removeEventListener('keydown', this.#escKeyDownHandler);
     }
     this.#mode = Mode.DEFAULT;
+    this.#onToggleButton();
   };
 }
