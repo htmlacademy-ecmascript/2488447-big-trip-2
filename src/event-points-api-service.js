@@ -24,9 +24,7 @@ export default class EventPointsApiService extends ApiService {
       body: JSON.stringify(this.#adaptToServer(point)),
       headers: new Headers({'Content-Type': 'application/json'}),
     });
-
     const parsedResponse = await ApiService.parseResponse(response);
-
     return parsedResponse;
   }
 
