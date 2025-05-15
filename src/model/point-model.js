@@ -29,9 +29,7 @@ export default class PointModel extends Observable {
     try {
       const points = await this.#eventPointsApiService.points;
       this.#points = points.map(this.#adaptToClient);
-
       this.#destinations = await this.#eventPointsApiService.destinations;
-
       this.#offers = await this.#eventPointsApiService.offers;
 
       this._notify(UpdateType.INIT);
