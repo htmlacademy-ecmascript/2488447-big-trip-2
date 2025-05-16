@@ -1,3 +1,4 @@
+import { MAX_POINTS_FOR_FULL_ROUTE } from '../constants.js';
 import TripInfoView from '../view/trip-info-view.js';
 import { render, RenderPosition, remove } from '../framework/render.js';
 
@@ -21,7 +22,7 @@ export default class TripInfoPresenter {
     const lastPoint = sortedPoints[sortedPoints.length - 1];
 
     let routeTitle = '';
-    if (sortedPoints.length > 3) {
+    if (sortedPoints.length > MAX_POINTS_FOR_FULL_ROUTE) {
       const firstName = this.#pointModel.getDestinationById(firstPoint.destination);
       const lastName = this.#pointModel.getDestinationById(lastPoint.destination);
       routeTitle = `${firstName.name} — ... — ${lastName.name}`;
