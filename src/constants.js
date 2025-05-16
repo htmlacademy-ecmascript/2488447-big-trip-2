@@ -96,3 +96,5 @@ export const RenderPosition = {
   BEFOREEND: 'beforeend',
   AFTEREND: 'afterend',
 };
+
+export const MAX_POINTS_FOR_FULL_ROUTE = 3;

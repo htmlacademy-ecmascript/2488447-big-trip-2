@@ -92,8 +92,7 @@ export default class EventPointPresenter {
   }
 
   createPoint() {
-    this.#mode = Mode.EDITING;
-    this.#createPoint();
+    return this.#createPoint();
   }
 
   destroy() {
@@ -106,7 +105,13 @@ export default class EventPointPresenter {
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
+      const wasCreating = this.#mode === Mode.NEW;
+
       this.#replaceFormToPoint();
+
+      if (wasCreating && this.#onToggleButton) {
+        this.#onToggleButton();
+      }
     }
   }
 
@@ -154,7 +159,7 @@ export default class EventPointPresenter {
   }
 
   #createPoint = () => {
-    if (this.#eventEditFormComponent !== null) {
+    if (this.#eventEditFormComponent !== null || this.#eventCreateFormComponent !== null) {
       return;
     }
     const point = BLANK_POINT;

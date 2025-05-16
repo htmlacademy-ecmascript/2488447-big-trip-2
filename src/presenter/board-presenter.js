@@ -86,6 +86,8 @@ export default class BoardPresenter {
       return;
     }
 
+    this.#eventPointsPresenters.forEach((presenter) => presenter.resetView());
+
     this.#currentSortType = sortType;
     this.#clearEventPointsList();
     this.#sortComponent.element.remove();
@@ -185,6 +187,10 @@ export default class BoardPresenter {
         this.#renderBoard();
         break;
       case UpdateType.MAJOR:
+        if (this.#isCreatingNewPoint) {
+          this.#handleModeChange();
+        }
+
         this.#clearBoard({resetSortType: true});
         this.#renderSort();
         this.#renderBoard();
